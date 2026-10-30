@@ -217,13 +217,21 @@ export class Straddle {
     return surfaceUnder(w.x, w.z, null) + SPREADER_HALF_H;
   }
 
+  spreadFits(): boolean {
+    return Math.abs(this.spread - CONTAINER.depth) < SPREAD_LOCK_TOL;
+  }
+
   canLock(p: Pickable): boolean {
+    return this.spreadFits() && this.envelopeFits(p);
+  }
+
+  // Position and height of the spreader over the container, ignoring the bar spread
+  envelopeFits(p: Pickable): boolean {
     if (p.attached || !isTop(p)) return false;
     const top = p.mesh.position.y + CONTAINER_CENTRE_ON_GROUND;
     const c = this.worldToLocal(p.mesh.position);
     const yawOff = wrapAngle(p.mesh.rotation.y - this.root.rotation.y);
     return (
-      Math.abs(this.spread - CONTAINER.depth) < SPREAD_LOCK_TOL &&
       Math.abs(this.spreaderY - (top + SPREADER_HALF_H)) < LOCK_HEIGHT_TOL &&
       Math.abs(c.x - (this.shiftX + this.swayX)) < LOCK_X_TOL &&
       Math.abs(c.z - this.swayZ) < LOCK_Z_TOL &&
@@ -298,6 +306,10 @@ export class Straddle {
 
     // Hoist and side shift
     this.spread = clamp(this.spread + (c.spread ?? 0) * SPREAD_RATE * dt, SPREAD_MIN, SPREAD_MAX);
+    // Assist: over a container with the bars not being driven, close them onto its length
+    if (!this.held && (c.spread ?? 0) === 0 && pickables.some((p) => this.envelopeFits(p))) {
+      this.spread += clamp(CONTAINER.depth - this.spread, -SPREAD_RATE * dt, SPREAD_RATE * dt);
+    }
     this.spreaderY += c.hoist * HOIST_RATE * dt;
     this.shiftX = clamp(this.shiftX + c.shift * SHIFT_RATE * dt, -SHIFT_MAX, SHIFT_MAX);
 
