@@ -107,9 +107,10 @@ function buildBody(root: TransformNode, mats: CarrierMats, scene: Scene): void {
   for (const x of [-3.2, 3.2]) {
     for (const z of [-5, 5]) {
       part("leg", { width: 0.7, height: 10.5, depth: 0.7 }, mats.body, [x, 5.25, z]);
-      const wheel = MeshBuilder.CreateCylinder("wheel", { diameter: 1.3, height: 0.6, tessellation: 16 }, scene);
+      // Tyre sits outside the leg so it reads clearly against the columns
+      const wheel = MeshBuilder.CreateCylinder("wheel", { diameter: 1.6, height: 0.8, tessellation: 20 }, scene);
       wheel.rotation = new Vector3(0, 0, Math.PI / 2);
-      wheel.position = new Vector3(x, 0.65, z);
+      wheel.position = new Vector3(x * 1.22, 0.8, z);
       wheel.material = darkGrey;
       wheel.parent = root;
     }
