@@ -67,7 +67,7 @@ const drone = new FreeCamera("drone", Vector3.Zero(), scene);
 drone.minZ = 0.5;
 drone.inputs.clear();
 const DRONE_CENTRE = new Vector3(20, 0, 0); // middle of the apron and the crane line
-const DRONE_RADIUS = 120; // m
+const DRONE_RADIUS = 220; // m
 const DRONE_ALT = 305; // m, 1,000 ft
 const DRONE_RATE = 0.12; // rad/s
 let droneAngle = 0;
