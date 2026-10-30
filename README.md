@@ -2,6 +2,12 @@
 
 A personal browser sim for driving an unbranded straddle carrier around a yard. Built with Babylon.js, TypeScript and Vite.
 
+## Play online
+
+https://cloudux-au.github.io/straddle-carrier-game/
+
+Deployed from `main` by the GitHub Pages workflow in `.github/workflows/pages.yml`. Needs a modern desktop browser with WebGL.
+
 ## Run
 
 ```
