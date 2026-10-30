@@ -129,7 +129,7 @@ function buildCab(root: TransformNode, mats: CarrierMats, scene: Scene): void {
   part("cabFloor", { width: 1.4, height: 0.1, depth: 1.8 }, mats.glass, [-2.7, 6.2, 3.9]);
   part("cabRoof", { width: 1.4, height: 0.1, depth: 1.8 }, mats.body, [-2.7, 7.8, 3.9]);
   part("cabRear", { width: 1.4, height: 1.6, depth: 0.1 }, mats.glass, [-2.7, 7.0, 3.0]);
-  part("cabOuter", { width: 0.1, height: 1.6, depth: 1.8 }, mats.body, [-3.35, 7.0, 3.9]);
+  part("cabOuter", { width: 0.1, height: 1.6, depth: 1.8 }, mats.glass, [-3.35, 7.0, 3.9]);
   part("cabInner", { width: 0.05, height: 1.6, depth: 1.8 }, mats.glass, [-2.05, 7.0, 3.9]);
   part("cabFront", { width: 1.4, height: 1.6, depth: 0.05 }, mats.glass, [-2.7, 7.0, 4.85]);
 }
