@@ -171,6 +171,7 @@ function playerControls(): Controls {
     steer: (k.has("KeyD") ? 1 : 0) - (k.has("KeyA") ? 1 : 0),
     hoist: (k.has("KeyR") ? 1 : 0) - (k.has("KeyF") ? 1 : 0),
     shift: (k.has("KeyI") ? 1 : 0) - (k.has("KeyK") ? 1 : 0),
+    spread: (k.has("KeyQ") ? 1 : 0) - (k.has("KeyE") ? 1 : 0),
   };
 }
 
@@ -203,11 +204,11 @@ function update(dt: number): void {
   const camName = CAM_NAMES.get(activeCam) ?? "";
   hud.textContent =
     `${(Math.abs(player.speed) * 3.6).toFixed(1)} km/h  steer ${((player.steer / 0.55) * 100).toFixed(0)}%\n` +
-    `spreader ${player.spreaderY.toFixed(1)} m  shift ${player.shiftX.toFixed(1)} m  sway ${Math.hypot(player.swayX, player.swayZ).toFixed(2)} m\n` +
+    `spreader ${player.spreaderY.toFixed(1)} m  bars ${player.spread.toFixed(2)} m  shift ${player.shiftX.toFixed(1)} m  sway ${Math.hypot(player.swayX, player.swayZ).toFixed(2)} m\n` +
     `twistlocks: ${lockText}\n` +
     `stacked in yard: ${stacked} of ${pickables.length}   (max ${MAX_TIER} high)\n` +
     `camera: ${camName}\n` +
-    `W/S throttle+brake   A/D steer   R/F hoist   I/K shift\n` +
+    `W/S throttle+brake   A/D steer   R/F hoist   I/K shift   Q/E open/close bars\n` +
     `Space twistlocks   1 cockpit   2 chase   3 drone\n` +
     `cockpit: drag or arrows to look   V recentre`;
 }

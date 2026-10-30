@@ -17,6 +17,7 @@ npm run dev
 | A / D | Steer left / right |
 | R / F | Hoist up / lower spreader |
 | I / K | Side shift spreader |
+| Q / E | Open / close the two T-bars (they must match the container length to twistlock) |
 | Space | Lock / release twistlocks (lock works on a container on the ground, when the spreader is at its lowest, aligned over it) |
 | 1 | Cockpit camera |
 | 2 | Chase camera |

@@ -23,7 +23,8 @@ import {
 
 // ---------- Controls ----------
 
-export type Controls = { throttle: number; steer: number; hoist: number; shift: number };
+// spread: -1 closes the T-bars, +1 opens them (optional, defaults to 0)
+export type Controls = { throttle: number; steer: number; hoist: number; shift: number; spread?: number };
 export const NO_CONTROLS: Controls = { throttle: 0, steer: 0, hoist: 0, shift: 0 };
 
 // ---------- Tuning ----------
@@ -39,6 +40,11 @@ const LOCK_Z_TOL = 0.6;
 const LOCK_YAW_TOL = 0.06;
 const SWAY_DAMP = 0.6;
 const SWAY_MAX = 0.8;
+// The two T-bars open and close to fit the container length; they only twistlock when fitted to it
+const SPREAD_MIN = 5.0;
+const SPREAD_MAX = 7.0;
+const SPREAD_RATE = 0.8;
+const SPREAD_LOCK_TOL = 0.3;
 
 const MAX_FWD = 6;
 const MAX_REV = 2;
@@ -119,7 +125,7 @@ function buildCab(root: TransformNode, mats: CarrierMats, scene: Scene): void {
     const mesh = box(name, size, m, pos);
     mesh.parent = root;
   };
-  part("cabFloor", { width: 1.4, height: 0.1, depth: 1.8 }, mats.body, [-2.7, 6.2, 3.9]);
+  part("cabFloor", { width: 1.4, height: 0.1, depth: 1.8 }, mats.glass, [-2.7, 6.2, 3.9]);
   part("cabRoof", { width: 1.4, height: 0.1, depth: 1.8 }, mats.body, [-2.7, 7.8, 3.9]);
   part("cabRear", { width: 1.4, height: 1.6, depth: 0.1 }, mats.body, [-2.7, 7.0, 3.0]);
   part("cabOuter", { width: 0.1, height: 1.6, depth: 1.8 }, mats.body, [-3.35, 7.0, 3.9]);
@@ -139,11 +145,13 @@ export class Straddle {
   readonly root: TransformNode;
   readonly spreaderNode: TransformNode;
   private readonly ropes: LinesMesh[] = [];
+  private readonly bars: TransformNode[] = [];
 
   speed = 0;
   steer = 0;
   heading: number;
   spreaderY = SPREADER_MAX_Y;
+  spread = CONTAINER.depth; // distance between the two T-bars, in metres
   shiftX = 0;
   swayX = 0;
   swayZ = 0;
@@ -162,8 +170,15 @@ export class Straddle {
 
     this.spreaderNode = new TransformNode("spreader", scene);
     this.spreaderNode.parent = this.root;
-    const spreaderBox = box("spreaderBox", { width: 2.6, height: 0.4, depth: 6.2 }, darkGrey, [0, 0, 0]);
-    spreaderBox.parent = this.spreaderNode;
+    // Two T-bars, each a beam across the container with a stem up to the ropes
+    for (let i = 0; i < 2; i++) {
+      const bar = new TransformNode(`tbar${i}`, scene);
+      bar.parent = this.spreaderNode;
+      box("tbarBeam", { width: 2.6, height: 0.4, depth: 0.5 }, darkGrey, [0, 0, 0]).parent = bar;
+      box("tbarStem", { width: 0.4, height: 0.6, depth: 0.4 }, darkGrey, [0, 0.5, 0]).parent = bar;
+      this.bars.push(bar);
+    }
+    this.updateBars();
 
     for (let i = 0; i < ROPE_CORNERS.length; i++) {
       const line = MeshBuilder.CreateLines(`rope${i}`, { points: [Vector3.Zero(), Vector3.Zero()], updatable: true }, scene);
@@ -208,6 +223,7 @@ export class Straddle {
     const c = this.worldToLocal(p.mesh.position);
     const yawOff = wrapAngle(p.mesh.rotation.y - this.root.rotation.y);
     return (
+      Math.abs(this.spread - CONTAINER.depth) < SPREAD_LOCK_TOL &&
       Math.abs(this.spreaderY - (top + SPREADER_HALF_H)) < LOCK_HEIGHT_TOL &&
       Math.abs(c.x - (this.shiftX + this.swayX)) < LOCK_X_TOL &&
       Math.abs(c.z - this.swayZ) < LOCK_Z_TOL &&
@@ -281,6 +297,7 @@ export class Straddle {
     this.root.rotation.y = nh;
 
     // Hoist and side shift
+    this.spread = clamp(this.spread + (c.spread ?? 0) * SPREAD_RATE * dt, SPREAD_MIN, SPREAD_MAX);
     this.spreaderY += c.hoist * HOIST_RATE * dt;
     this.shiftX = clamp(this.shiftX + c.shift * SHIFT_RATE * dt, -SHIFT_MAX, SHIFT_MAX);
 
@@ -294,7 +311,15 @@ export class Straddle {
 
     this.spreaderY = clamp(this.spreaderY, this.minSpreaderY(), SPREADER_MAX_Y);
     this.spreaderNode.position = new Vector3(this.shiftX + this.swayX, this.spreaderY, this.swayZ);
+    this.updateBars();
     this.updateRopes();
+  }
+
+  // Place each T-bar at its end of the spread
+  private updateBars(): void {
+    this.bars.forEach((bar, i) => {
+      bar.position = new Vector3(0, 0, i === 0 ? -this.spread / 2 : this.spread / 2);
+    });
   }
 
   private updateRopes(): void {
@@ -306,7 +331,10 @@ export class Straddle {
       MeshBuilder.CreateLines(
         `rope${i}`,
         {
-          points: [new Vector3(tx, TROLLEY_Y, tz), new Vector3(px + cx, this.spreaderY + SPREADER_HALF_H, pz + cz)],
+          points: [
+            new Vector3(tx, TROLLEY_Y, tz),
+            new Vector3(px + cx, this.spreaderY + SPREADER_HALF_H, pz + Math.sign(cz) * this.spread / 2),
+          ],
           instance: this.ropes[i],
         },
         scene,
@@ -326,6 +354,11 @@ export function toggleLock(s: Straddle): void {
 }
 
 // ---------- Autopilot ----------
+
+// Open or close the T-bars towards the container length
+function fitSpread(s: Straddle): number {
+  return clamp((CONTAINER.depth - s.spread) * 2, -1, 1);
+}
 
 // Drive to a point and align heading to tyaw. Non-strict points only need to be reached; strict ones must be stopped at.
 export function driveTowards(
@@ -407,6 +440,10 @@ export class Autopilot {
   }
 
   step(dt: number): Controls {
+    return { ...this.decide(dt), spread: fitSpread(this.s) };
+  }
+
+  private decide(dt: number): Controls {
     const s = this.s;
 
     // Stuck against something: back off and turn for a moment
