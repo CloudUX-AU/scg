@@ -26,7 +26,7 @@ buildHorizon(scene);
 
 // Shared materials for the cab, and body colours for each carrier
 const glass = material("glass", 0.55, 0.75, 0.9);
-glass.alpha = 0.35;
+glass.alpha = 0.2;
 const hiVis = material("hiVis", 1.0, 0.45, 0.0);
 const skin = material("skin", 0.85, 0.7, 0.6);
 
