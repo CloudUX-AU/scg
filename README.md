@@ -17,7 +17,8 @@ npm run dev
 | A / D | Steer left / right |
 | 1 | Cockpit camera |
 | 2 | Chase camera |
-| V | Cockpit: toggle between spreader and look-ahead |
+| Mouse drag / arrow keys | Cockpit: look around the cab |
+| V | Cockpit: recentre the view on the spreader |
 
 ## Milestones
 

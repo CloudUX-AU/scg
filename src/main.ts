@@ -120,7 +120,6 @@ chase.minZ = 0.1;
 chase.inputs.clear();
 
 let activeCam: FreeCamera = cockpit;
-let lookForward = false; // V toggles cockpit view between spreader and ahead
 scene.activeCamera = cockpit;
 
 const CAB_LOCAL = new Vector3(-2.7, 7.0, 4.0);
@@ -131,16 +130,37 @@ function localToWorld(p: Vector3): Vector3 {
   return Vector3.TransformCoordinates(p, carrier.getWorldMatrix());
 }
 
+// Cockpit look direction, in the carrier's own frame (yaw 0 = straight ahead,
+// positive yaw = to the right, positive pitch = up). Default points at the spreader.
+const spreaderDir = SPREADER_LOCAL.subtract(CAB_LOCAL);
+const DEFAULT_YAW = Math.atan2(spreaderDir.x, spreaderDir.z);
+const DEFAULT_PITCH = Math.atan2(spreaderDir.y, Math.hypot(spreaderDir.x, spreaderDir.z));
+let lookYaw = DEFAULT_YAW;
+let lookPitch = DEFAULT_PITCH;
+const PITCH_MIN = -1.2;
+const PITCH_MAX = 0.6;
+const LOOK_KEY_RATE = 1.5; // rad/s for arrow keys
+const LOOK_MOUSE_SENS = 0.005; // rad per pixel of drag
+
+function recentreLook(): void {
+  lookYaw = DEFAULT_YAW;
+  lookPitch = DEFAULT_PITCH;
+}
+
 function updateCameras(forward: Vector3): void {
   const body = localToWorld(Vector3.Zero());
 
-  // Cockpit: seated in the cab
+  // Cockpit: seated in the cab, looking where the driver has turned their head
   const eye = localToWorld(CAB_LOCAL);
   cockpit.position = eye;
-  const target = lookForward
-    ? eye.add(forward.scale(30)).add(new Vector3(0, -2, 0))
-    : localToWorld(SPREADER_LOCAL);
-  cockpit.setTarget(target);
+  const localDir = new Vector3(
+    Math.sin(lookYaw) * Math.cos(lookPitch),
+    Math.sin(lookPitch),
+    Math.cos(lookYaw) * Math.cos(lookPitch),
+  );
+  carrier.computeWorldMatrix(true);
+  const worldDir = Vector3.TransformNormal(localDir, carrier.getWorldMatrix()).normalize();
+  cockpit.setTarget(eye.add(worldDir.scale(10)));
 
   // Chase: behind and above the machine
   chase.position = body.subtract(forward.scale(18)).add(new Vector3(0, 8, 0));
@@ -156,10 +176,27 @@ window.addEventListener("keydown", (e) => {
   if (e.repeat) return;
   if (e.code === "Digit1") activeCam = cockpit;
   if (e.code === "Digit2") activeCam = chase;
-  if (e.code === "KeyV") lookForward = !lookForward;
+  if (e.code === "KeyV") recentreLook();
 });
 window.addEventListener("keyup", (e) => keysDown.delete(e.code));
-window.addEventListener("blur", () => keysDown.clear());
+window.addEventListener("blur", () => {
+  keysDown.clear();
+  dragging = false;
+});
+
+// Mouse drag on the canvas turns the driver's head
+let dragging = false;
+canvas.addEventListener("pointerdown", (e) => {
+  dragging = true;
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointerup", () => (dragging = false));
+canvas.addEventListener("pointercancel", () => (dragging = false));
+canvas.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  lookYaw += e.movementX * LOOK_MOUSE_SENS;
+  lookPitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, lookPitch - e.movementY * LOOK_MOUSE_SENS));
+});
 
 // ---------- Driving model (kinematic bicycle model, no physics yet) ----------
 
@@ -199,17 +236,23 @@ function update(dt: number): void {
   carrier.position.x = Math.max(-YARD_LIMIT, Math.min(YARD_LIMIT, carrier.position.x));
   carrier.position.z = Math.max(-YARD_LIMIT, Math.min(YARD_LIMIT, carrier.position.z));
 
-  const forwardNow = forward;
-  updateCameras(forwardNow);
+  // Arrow keys turn the driver's head
+  if (keysDown.has("ArrowLeft")) lookYaw -= LOOK_KEY_RATE * dt;
+  if (keysDown.has("ArrowRight")) lookYaw += LOOK_KEY_RATE * dt;
+  if (keysDown.has("ArrowUp")) lookPitch += LOOK_KEY_RATE * dt;
+  if (keysDown.has("ArrowDown")) lookPitch -= LOOK_KEY_RATE * dt;
+  lookPitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, lookPitch));
+
+  updateCameras(forward);
   scene.activeCamera = activeCam;
 
   const camName = activeCam === cockpit ? "cockpit" : "chase";
-  const lookName = activeCam === cockpit ? (lookForward ? " (looking ahead)" : " (on spreader)") : "";
   hud.textContent =
     `${(Math.abs(speed) * 3.6).toFixed(1)} km/h  steer ${((steer / MAX_STEER) * 100).toFixed(0)}%\n` +
-    `camera: ${camName}${lookName}\n` +
+    `camera: ${camName}\n` +
     `W/S throttle+brake   A/D steer\n` +
-    `1 cockpit   2 chase   V look ahead`;
+    `1 cockpit   2 chase\n` +
+    `cockpit: drag or arrows to look   V recentre`;
 }
 
 // ---------- Loop ----------
