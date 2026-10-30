@@ -31,6 +31,8 @@ Quay apron with three ship-to-shore cranes, a container ship with stacked contai
 
 - **M1** Drive and steer, cockpit camera, flat yard
 - **M2** Spreader hoist, sway, twistlock engagement. Sway and locking are kinematic, not physics-based
-- **M3** Pick up and stack in a 6 by 8 grid, up to 3 high; two AI straddle carriers pick up and stack containers too (this commit). No collision detection yet
-- **M4** Unloading loop from a quay point
+- **M3** Pick up and stack in a 6 by 8 grid, up to 3 high; two AI straddle carriers pick up and stack containers too
+- **M4** Ship unloading: three ship-to-shore cranes lift containers off the deck and set them down on the apron at their drop line. Each crane has its own pile
+- **Collision** Carriers collide with each other, the static scene (cranes, masts, office, yard block) and containers on the ground or in the stacks. Legs and cab are solid; the chassis passes over containers. A stuck AI carrier backs off and turns
+- **Crane ownership** The yellow AI carrier only picks from the north crane's pile, the blue AI from the south crane's pile. The middle crane's pile is left to you
 - **M5** Camera polish, scoring, HUD
