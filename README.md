@@ -15,15 +15,22 @@ npm run dev
 |---|---|
 | W / S | Throttle / brake and reverse |
 | A / D | Steer left / right |
+| R / F | Hoist up / lower spreader |
+| I / K | Side shift spreader |
+| Space | Lock / release twistlocks (lock works on a container on the ground, when the spreader is at its lowest, aligned over it) |
 | 1 | Cockpit camera |
 | 2 | Chase camera |
 | Mouse drag / arrow keys | Cockpit: look around the cab |
 | V | Cockpit: recentre the view on the spreader |
 
+## Scene
+
+Quay apron with three ship-to-shore cranes, a container ship with stacked containers on deck, a yard block with a rubber-tyred gantry, light masts, and an office. Two containers on the ground to pick up.
+
 ## Milestones
 
-- **M1** Drive and steer, cockpit camera, flat yard (this commit)
-- **M2** Spreader hoist, sway, twistlock engagement
+- **M1** Drive and steer, cockpit camera, flat yard
+- **M2** Spreader hoist, sway, twistlock engagement (this commit). Sway and locking are kinematic, not physics-based
 - **M3** Pick up and stack in a grid
 - **M4** Unloading loop from a quay point
 - **M5** Camera polish, scoring, HUD
