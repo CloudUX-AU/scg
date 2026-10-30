@@ -428,6 +428,11 @@ export class Autopilot {
     readonly approachSign: number,
   ) {}
 
+  // Each AI uses the yard gate on its own side, so the two never drive through each other's crane
+  private get gateZ(): number {
+    return this.approachSign < 0 ? GATE_Z : -GATE_Z;
+  }
+
   private giveUp(): void {
     if (this.target) this.target.claimedBy = null;
     this.target = null;
@@ -471,7 +476,7 @@ export class Autopilot {
         if (!p) return NO_CONTROLS;
         this.target = p;
         this.route = [
-          { x: DROP_X, z: GATE_Z, yaw: 0, strict: false },
+          { x: DROP_X, z: this.gateZ, yaw: 0, strict: false },
           { x: DROP_X, z: this.craneZ + this.approachSign * 14, yaw: 0, strict: false },
           { x: DROP_X, z: this.craneZ, yaw: 0, strict: true },
         ];
@@ -518,8 +523,8 @@ export class Autopilot {
         reservedSlots.add(idx);
         const slot = slots[idx];
         this.route = [
-          { x: DROP_X, z: GATE_Z, yaw: 0, strict: false },
-          { x: slot.x, z: GATE_Z, yaw: 0, strict: false },
+          { x: DROP_X, z: this.gateZ, yaw: 0, strict: false },
+          { x: slot.x, z: this.gateZ, yaw: 0, strict: false },
           { x: slot.x, z: slot.z, yaw: 0, strict: true },
         ];
         this.phase = "driveToStack";
