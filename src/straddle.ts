@@ -98,8 +98,6 @@ function buildBody(root: TransformNode, mats: CarrierMats, scene: Scene): void {
     const mesh = box(name, size, m, pos);
     mesh.parent = root;
   };
-  // Chassis sits high enough that containers pass under it
-  part("chassis", { width: 7, height: 0.6, depth: 11 }, darkGrey, [0, 3.0, 0]);
   for (const x of [-3.2, 3.2]) {
     for (const z of [-5, 5]) {
       part("leg", { width: 0.7, height: 10.5, depth: 0.7 }, mats.body, [x, 5.25, z]);

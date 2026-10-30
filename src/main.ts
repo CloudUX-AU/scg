@@ -12,6 +12,7 @@ import {
   stepContainers,
 } from "./world";
 import { Autopilot, Straddle, toggleLock, type CarrierMats, type Controls } from "./straddle";
+import { buildHorizon } from "./horizon";
 
 // ---------- Setup ----------
 
@@ -21,6 +22,7 @@ const hud = document.getElementById("hud") as HTMLDivElement;
 const engine = new Engine(canvas, true);
 const scene = new Scene(engine);
 initWorld(scene);
+buildHorizon(scene);
 
 // Shared materials for the cab, and body colours for each carrier
 const glass = material("glass", 0.55, 0.75, 0.9);
@@ -59,6 +61,16 @@ cockpit.inputs.clear(); // stop the camera grabbing WASD
 const chase = new FreeCamera("chase", Vector3.Zero(), scene);
 chase.minZ = 0.1;
 chase.inputs.clear();
+
+// Drone: circles the dock at 1,000 ft above sea level, always looking at the player's carrier
+const drone = new FreeCamera("drone", Vector3.Zero(), scene);
+drone.minZ = 0.5;
+drone.inputs.clear();
+const DRONE_CENTRE = new Vector3(20, 0, 0); // middle of the apron and the crane line
+const DRONE_RADIUS = 120; // m
+const DRONE_ALT = 305; // m, 1,000 ft
+const DRONE_RATE = 0.12; // rad/s
+let droneAngle = 0;
 
 let activeCam: FreeCamera = cockpit;
 scene.activeCamera = cockpit;
@@ -104,7 +116,20 @@ function updateCameras(): void {
 
   chase.position = body.subtract(forward.scale(18)).add(new Vector3(0, 8, 0));
   chase.setTarget(body.add(new Vector3(0, 3, 0)));
+
+  drone.position = new Vector3(
+    DRONE_CENTRE.x + DRONE_RADIUS * Math.cos(droneAngle),
+    DRONE_ALT,
+    DRONE_CENTRE.z + DRONE_RADIUS * Math.sin(droneAngle),
+  );
+  drone.setTarget(body.add(new Vector3(0, 3, 0)));
 }
+
+const CAM_NAMES = new Map<FreeCamera, string>([
+  [cockpit, "cockpit"],
+  [chase, "chase"],
+  [drone, "drone"],
+]);
 
 // ---------- Input ----------
 
@@ -117,6 +142,7 @@ window.addEventListener("keydown", (e) => {
   if (e.repeat) return;
   if (e.code === "Digit1") activeCam = cockpit;
   if (e.code === "Digit2") activeCam = chase;
+  if (e.code === "Digit3") activeCam = drone;
   if (e.code === "KeyV") recentreLook();
   if (e.code === "Space") toggleLock(player);
 });
@@ -163,6 +189,7 @@ function update(dt: number): void {
   if (keysDown.has("ArrowUp")) lookPitch += LOOK_KEY_RATE * dt;
   if (keysDown.has("ArrowDown")) lookPitch -= LOOK_KEY_RATE * dt;
   lookPitch = clamp(lookPitch, PITCH_MIN, PITCH_MAX);
+  droneAngle += DRONE_RATE * dt;
 
   updateCameras();
   scene.activeCamera = activeCam;
@@ -173,7 +200,7 @@ function update(dt: number): void {
     : pickables.some((p) => player.canLock(p))
       ? "lock available (Space)"
       : "open";
-  const camName = activeCam === cockpit ? "cockpit" : "chase";
+  const camName = CAM_NAMES.get(activeCam) ?? "";
   hud.textContent =
     `${(Math.abs(player.speed) * 3.6).toFixed(1)} km/h  steer ${((player.steer / 0.55) * 100).toFixed(0)}%\n` +
     `spreader ${player.spreaderY.toFixed(1)} m  shift ${player.shiftX.toFixed(1)} m  sway ${Math.hypot(player.swayX, player.swayZ).toFixed(2)} m\n` +
@@ -181,7 +208,7 @@ function update(dt: number): void {
     `stacked in yard: ${stacked} of ${pickables.length}   (max ${MAX_TIER} high)\n` +
     `camera: ${camName}\n` +
     `W/S throttle+brake   A/D steer   R/F hoist   I/K shift\n` +
-    `Space twistlocks   1 cockpit   2 chase\n` +
+    `Space twistlocks   1 cockpit   2 chase   3 drone\n` +
     `cockpit: drag or arrows to look   V recentre`;
 }
 

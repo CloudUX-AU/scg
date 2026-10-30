@@ -20,6 +20,7 @@ npm run dev
 | Space | Lock / release twistlocks (lock works on a container on the ground, when the spreader is at its lowest, aligned over it) |
 | 1 | Cockpit camera |
 | 2 | Chase camera |
+| 3 | Drone camera: circles the dock at 1,000 ft, always looking at your carrier |
 | Mouse drag / arrow keys | Cockpit: look around the cab |
 | V | Cockpit: recentre the view on the spreader |
 

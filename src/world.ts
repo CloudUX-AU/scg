@@ -10,6 +10,7 @@ import {
   Vector3,
 } from "@babylonjs/core";
 import type { OBB } from "./collision";
+import earcut from "earcut";
 
 // ---------- Shared constants ----------
 
@@ -213,7 +214,7 @@ export function buildShip(): void {
     new Vector3(SHIP_X, 0, 75),
     new Vector3(SHIP_X - 12, 0, 45),
   ];
-  const hull = MeshBuilder.ExtrudePolygon("hull", { shape: hullOutline, depth: 8, sideOrientation: Mesh.DOUBLESIDE }, s);
+  const hull = MeshBuilder.ExtrudePolygon("hull", { shape: hullOutline, depth: 8, sideOrientation: Mesh.DOUBLESIDE }, s, earcut);
   hull.position.y = -4;
   hull.material = hullMat;
 
