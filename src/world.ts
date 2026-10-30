@@ -393,11 +393,14 @@ export class Crane {
 
 // ---------- Container queries and physics ----------
 
-export function surfaceUnder(x: number, z: number, exclude: Pickable | null): number {
+// Top of the highest container below `belowY` (default: any height) under this footprint.
+// Only containers below count, so a container never lands on one that is stacked above it.
+export function surfaceUnder(x: number, z: number, exclude: Pickable | null, belowY = Infinity): number {
   let top = 0;
   for (const o of pickables) {
     if (o === exclude || o.attached) continue;
     const op = o.mesh.position;
+    if (op.y >= belowY - 0.01) continue;
     if (Math.abs(op.x - x) < CONTAINER.width / 2 && Math.abs(op.z - z) < CONTAINER.depth / 2) {
       top = Math.max(top, op.y + CONTAINER_CENTRE_ON_GROUND);
     }
@@ -479,7 +482,7 @@ export function stepContainers(dt: number): void {
     const m = p.mesh;
     p.vy -= GRAVITY * dt;
     m.position.y += p.vy * dt;
-    const surf = surfaceUnder(m.position.x, m.position.z, p);
+    const surf = surfaceUnder(m.position.x, m.position.z, p, m.position.y);
     if (m.position.y - CONTAINER_CENTRE_ON_GROUND <= surf) {
       const slot = slotNear(m.position.x, m.position.z, p);
       if (slot) {
@@ -487,7 +490,7 @@ export function stepContainers(dt: number): void {
         m.position.z = slot.z;
         m.rotation.y = 0;
       }
-      const landed = surfaceUnder(m.position.x, m.position.z, p);
+      const landed = surfaceUnder(m.position.x, m.position.z, p, m.position.y);
       m.position.y = landed + CONTAINER_CENTRE_ON_GROUND;
       p.vy = 0;
     }

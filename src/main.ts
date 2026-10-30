@@ -94,14 +94,22 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
+// Chase camera orbit, relative to the carrier's heading
+let chaseYawOff = 0;
+let chasePitch = 0.28;
+const CHASE_PITCH_MIN = -0.2;
+const CHASE_PITCH_MAX = 1.2;
+const CHASE_DIST = 18;
+
 function recentreLook(): void {
   lookYaw = DEFAULT_YAW;
   lookPitch = DEFAULT_PITCH;
+  chaseYawOff = 0;
+  chasePitch = 0.28;
 }
 
 function updateCameras(): void {
   const body = player.localToWorld(Vector3.Zero());
-  const forward = new Vector3(Math.sin(player.heading), 0, Math.cos(player.heading));
 
   const eye = player.localToWorld(CAB_LOCAL);
   cockpit.position = eye;
@@ -114,7 +122,11 @@ function updateCameras(): void {
   const worldDir = Vector3.TransformNormal(localDir, player.root.getWorldMatrix()).normalize();
   cockpit.setTarget(eye.add(worldDir.scale(10)));
 
-  chase.position = body.subtract(forward.scale(18)).add(new Vector3(0, 8, 0));
+  const a = player.heading + chaseYawOff;
+  const horiz = CHASE_DIST * Math.cos(chasePitch);
+  chase.position = body.add(
+    new Vector3(-Math.sin(a) * horiz, 3 + CHASE_DIST * Math.sin(chasePitch), -Math.cos(a) * horiz),
+  );
   chase.setTarget(body.add(new Vector3(0, 3, 0)));
 
   drone.position = new Vector3(
@@ -160,6 +172,11 @@ canvas.addEventListener("pointerup", () => (dragging = false));
 canvas.addEventListener("pointercancel", () => (dragging = false));
 canvas.addEventListener("pointermove", (e) => {
   if (!dragging) return;
+  if (activeCam === chase) {
+    chaseYawOff += e.movementX * LOOK_MOUSE_SENS;
+    chasePitch = clamp(chasePitch + e.movementY * LOOK_MOUSE_SENS, CHASE_PITCH_MIN, CHASE_PITCH_MAX);
+    return;
+  }
   lookYaw += e.movementX * LOOK_MOUSE_SENS;
   lookPitch = clamp(lookPitch - e.movementY * LOOK_MOUSE_SENS, PITCH_MIN, PITCH_MAX);
 });
@@ -185,11 +202,15 @@ function update(dt: number): void {
   for (const c of cranes) c.step(dt);
   stepContainers(dt);
 
-  if (keysDown.has("ArrowLeft")) lookYaw -= LOOK_KEY_RATE * dt;
-  if (keysDown.has("ArrowRight")) lookYaw += LOOK_KEY_RATE * dt;
-  if (keysDown.has("ArrowUp")) lookPitch += LOOK_KEY_RATE * dt;
-  if (keysDown.has("ArrowDown")) lookPitch -= LOOK_KEY_RATE * dt;
-  lookPitch = clamp(lookPitch, PITCH_MIN, PITCH_MAX);
+  const dYaw = (keysDown.has("ArrowRight") ? 1 : 0) - (keysDown.has("ArrowLeft") ? 1 : 0);
+  const dPitch = (keysDown.has("ArrowUp") ? 1 : 0) - (keysDown.has("ArrowDown") ? 1 : 0);
+  if (activeCam === chase) {
+    chaseYawOff += dYaw * LOOK_KEY_RATE * dt;
+    chasePitch = clamp(chasePitch + dPitch * LOOK_KEY_RATE * dt, CHASE_PITCH_MIN, CHASE_PITCH_MAX);
+  } else {
+    lookYaw += dYaw * LOOK_KEY_RATE * dt;
+    lookPitch = clamp(lookPitch + dPitch * LOOK_KEY_RATE * dt, PITCH_MIN, PITCH_MAX);
+  }
   droneAngle += DRONE_RATE * dt;
 
   updateCameras();

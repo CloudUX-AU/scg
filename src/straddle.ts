@@ -131,12 +131,6 @@ function buildCab(root: TransformNode, mats: CarrierMats, scene: Scene): void {
   part("cabOuter", { width: 0.1, height: 1.6, depth: 1.8 }, mats.body, [-3.35, 7.0, 3.9]);
   part("cabInner", { width: 0.05, height: 1.6, depth: 1.8 }, mats.glass, [-2.05, 7.0, 3.9]);
   part("cabFront", { width: 1.4, height: 1.6, depth: 0.05 }, mats.glass, [-2.7, 7.0, 4.85]);
-  part("seat", { width: 0.6, height: 0.5, depth: 0.6 }, darkGrey, [-2.95, 6.45, 3.9]);
-  part("driverTorso", { width: 0.45, height: 0.7, depth: 0.35 }, mats.hiVis, [-2.95, 6.95, 3.9]);
-  const head = MeshBuilder.CreateSphere("driverHead", { diameter: 0.3, segments: 10 }, scene);
-  head.material = mats.skin;
-  head.parent = root;
-  head.position = new Vector3(-2.95, 7.4, 3.9);
 }
 
 // ---------- The carrier ----------
